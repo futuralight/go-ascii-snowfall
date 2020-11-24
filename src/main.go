@@ -6,9 +6,12 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/buger/goterm"
 )
 
 //DefaultSnowChar - default snow character
@@ -89,6 +92,18 @@ func snowfall() {
 }
 
 func getTerminalSize() (int, int, error) {
+	switch os := runtime.GOOS; os {
+	case "windows":
+		return getTerminalSizeWindows()
+	case "linux":
+		return getTerminalSizeLinux()
+	default:
+		panic("OS don't support")
+	}
+	return 0, 0, nil
+}
+
+func getTerminalSizeLinux() (int, int, error) {
 	cmd := exec.Command("stty", "size")
 	cmd.Stdin = os.Stdin
 	out, err := cmd.Output()
@@ -110,6 +125,12 @@ func getTerminalSize() (int, int, error) {
 	return height, width, nil
 }
 
+func getTerminalSizeWindows() (int, int, error) {
+	height := goterm.Height()
+	width := goterm.Width()
+	return height, width, nil
+}
+
 func getScreen(height, width, ratio int, snowFlake string) string {
 	snowScreen := ""
 	for i := 0; i < height; i++ {
@@ -119,7 +140,6 @@ func getScreen(height, width, ratio int, snowFlake string) string {
 }
 
 func getString(width int, snowflake string, ratio int) string {
-
 	snowString := ""
 	for i := 0; i < width; i++ {
 		r := rand.Intn(100)
