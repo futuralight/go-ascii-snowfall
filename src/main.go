@@ -151,3 +151,24 @@ func getString(width int, snowflake string, ratio int) string {
 	}
 	return snowString
 }
+
+func getStringAppend(width int, snowflake string, ratio int) string {
+	snowSlice := make([]string, 0, width)
+	for i := 0; i < width; i++ {
+		r := rand.Intn(100)
+		if r < ratio {
+			snowSlice = append(snowSlice, snowflake)
+		} else {
+			snowSlice = append(snowSlice, " ")
+		}
+	}
+	return strings.Join(snowSlice, "")
+}
+
+func getScreenAppend(height, width, ratio int, snowFlake string) string {
+	snowScreen := make([]string, 0, height)
+	for i := 0; i < height; i++ {
+		snowScreen = append(snowScreen, getStringAppend(width, snowFlake, ratio))
+	}
+	return strings.Join(snowScreen, "\n")
+}
