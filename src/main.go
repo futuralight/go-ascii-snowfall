@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/buger/goterm"
+	"github.com/fatih/color"
 )
 
 //DefaultSnowChar - default snow character
@@ -32,6 +33,10 @@ var PrintDelayMilliSeconds time.Duration
 //SnowChar - snow character
 var SnowChar string
 
+var ColorMap map[string]color.Attribute
+
+var BgColorMap map[string]color.Attribute
+
 func main() {
 	FlakesRatio = DefaultFlakesRatio
 	PrintDelayMilliSeconds = DefaultPrintDelayMilliSeconds
@@ -41,6 +46,30 @@ func main() {
 		fmt.Println("Error: " + err.Error())
 	} else {
 		snowfall()
+	}
+}
+
+func init() {
+	ColorMap = map[string]color.Attribute{
+		"white":   color.FgWhite,
+		"black":   color.FgBlack,
+		"red":     color.FgRed,
+		"blue":    color.FgBlue,
+		"magneta": color.FgMagenta,
+		"cyan":    color.FgCyan,
+		"green":   color.FgGreen,
+		"yellow":  color.FgYellow,
+	}
+
+	BgColorMap = map[string]color.Attribute{
+		"white":   color.BgWhite,
+		"black":   color.BgBlack,
+		"red":     color.BgRed,
+		"blue":    color.BgBlue,
+		"magneta": color.BgMagenta,
+		"cyan":    color.BgCyan,
+		"green":   color.BgGreen,
+		"yellow":  color.BgYellow,
 	}
 }
 
@@ -75,6 +104,27 @@ func argsCheck() error {
 				return err
 			}
 			PrintDelayMilliSeconds = time.Duration(delay)
+		}
+		if v == "-c" { //color
+			if len(args)-1 < i+1 {
+				return errors.New("The color is missing")
+			}
+			clr, ok := ColorMap[args[i+1]]
+			if !ok {
+				return errors.New("No such color")
+			}
+			color.Set(clr)
+		}
+
+		if v == "-bc" { //background color
+			if len(args)-1 < i+1 {
+				return errors.New("The background color is missing")
+			}
+			bclr, ok := BgColorMap[args[i+1]]
+			if !ok {
+				return errors.New("No such color")
+			}
+			color.Set(bclr)
 		}
 	}
 	return nil
