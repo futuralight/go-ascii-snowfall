@@ -15,6 +15,15 @@ func TestGetStringWidth(t *testing.T) {
 	}
 }
 
+func TestGetStringWidth(t *testing.T) {
+	width := 30
+	snowString := getString(width, DefaultSnowChar, DefaultFlakesRatio)
+	runeCount := utf8.RuneCountInString(snowString)
+	if width != runeCount {
+		t.Error(fmt.Sprintf("Expcted runeCount %d, got %d", width, runeCount))
+	}
+}
+
 func BenchmarkGetString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		getString(80, DefaultSnowChar, DefaultFlakesRatio)
