@@ -24,6 +24,16 @@ const DefaultFlakesRatio = 3
 //DefaultPrintDelayMilliSeconds - default delay betwen printing
 const DefaultPrintDelayMilliSeconds = 800
 
+const HelpTest = `go-ascii-snowfall 0.389213921011!.3232323242
+
+Usage binary [--help] [OPTIONS]
+   -r <ratio>			Snowfall power ratio
+   -f <flake>			Flake character
+   -d <delay>			Delay between screens
+   -c <color>			Color of flake (white, black, red, blue, magneta, cyan, green, yellow)
+   -bc <background color>	Color of background (white, black, red, blue, magneta, cyan, green, yellow)
+`
+
 //snowStringGetter is func type for getting string of snow
 type snowStringGetter func(int, string, int) string
 
@@ -62,7 +72,11 @@ func main() {
 	flakesRatio = DefaultFlakesRatio
 	printDelayMilliSeconds = DefaultPrintDelayMilliSeconds
 	snowChar = DefaultSnowChar
-	err := argsCheck()
+	showHelp, err := argsCheck()
+	if showHelp {
+		fmt.Println(HelpTest)
+		return
+	}
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	} else {
@@ -70,65 +84,69 @@ func main() {
 	}
 }
 
-func argsCheck() error {
+func argsCheck() (bool, error) {
 	args := os.Args[1:]
 	for i, v := range args {
+		//Help option
+		if v == "--help" {
+			return true, nil
+		}
 		//Ratio
 		if v == "-r" {
 			if len(args)-1 < i+1 {
-				return errors.New("The ratio is missing")
+				return false, errors.New("The ratio is missing")
 			}
 			ratio, err := strconv.Atoi(strings.TrimSpace(args[i+1]))
 			if err != nil {
-				return err
+				return false, err
 			}
 			if ratio > 100 {
-				return errors.New("The ratio must be less than 100")
+				return false, errors.New("The ratio must be less than 100")
 			}
 			flakesRatio = ratio
 		}
 		//Flake
 		if v == "-f" {
 			if len(args)-1 < i+1 {
-				return errors.New("The flake character is missing")
+				return false, errors.New("The flake character is missing")
 			}
 			snowChar = strings.TrimSpace(args[i+1])
 		}
 		//Delay
 		if v == "-d" {
 			if len(args)-1 < i+1 {
-				return errors.New("The delay is missing")
+				return false, errors.New("The delay is missing")
 			}
 			delay, err := strconv.Atoi(strings.TrimSpace(args[i+1]))
 			if err != nil {
-				return err
+				return false, err
 			}
 			printDelayMilliSeconds = time.Duration(delay)
 		}
 		//Color
 		if v == "-c" {
 			if len(args)-1 < i+1 {
-				return errors.New("The color is missing")
+				return false, errors.New("The color is missing")
 			}
 			clr, ok := colorMap[args[i+1]]
 			if !ok {
-				return errors.New("No such color")
+				return false, errors.New("No such color")
 			}
 			color.Set(clr)
 		}
 		//Background color
 		if v == "-bc" {
 			if len(args)-1 < i+1 {
-				return errors.New("The background color is missing")
+				return false, errors.New("The background color is missing")
 			}
 			bgClr, ok := bgColorMap[args[i+1]]
 			if !ok {
-				return errors.New("No such color")
+				return false, errors.New("No such color")
 			}
 			color.Set(bgClr)
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func snowfall() {
