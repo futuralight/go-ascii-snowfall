@@ -24,23 +24,44 @@ const DefaultFlakesRatio = 3
 //DefaultPrintDelayMilliSeconds - default delay betwen printing
 const DefaultPrintDelayMilliSeconds = 800
 
-//FlakesRatio - flakes in string ratio
-var FlakesRatio int
+//snowStringGetter is func type for getting string of snow
+type snowStringGetter func(int, string, int) string
 
-//PrintDelayMilliSeconds - delay betwen printing
-var PrintDelayMilliSeconds time.Duration
+//flakesRatio - flakes in string ratio
+var flakesRatio int
 
-//SnowChar - snow character
-var SnowChar string
+//printDelayMilliSeconds - delay betwen printing
+var printDelayMilliSeconds time.Duration
 
-var ColorMap map[string]color.Attribute
+//snowChar - snow character
+var snowChar string
 
-var BgColorMap map[string]color.Attribute
+var colorMap = map[string]color.Attribute{
+	"white":   color.FgWhite,
+	"black":   color.FgBlack,
+	"red":     color.FgRed,
+	"blue":    color.FgBlue,
+	"magneta": color.FgMagenta,
+	"cyan":    color.FgCyan,
+	"green":   color.FgGreen,
+	"yellow":  color.FgYellow,
+}
+
+var bgColorMap = map[string]color.Attribute{
+	"white":   color.BgWhite,
+	"black":   color.BgBlack,
+	"red":     color.BgRed,
+	"blue":    color.BgBlue,
+	"magneta": color.BgMagenta,
+	"cyan":    color.BgCyan,
+	"green":   color.BgGreen,
+	"yellow":  color.BgYellow,
+}
 
 func main() {
-	FlakesRatio = DefaultFlakesRatio
-	PrintDelayMilliSeconds = DefaultPrintDelayMilliSeconds
-	SnowChar = DefaultSnowChar
+	flakesRatio = DefaultFlakesRatio
+	printDelayMilliSeconds = DefaultPrintDelayMilliSeconds
+	snowChar = DefaultSnowChar
 	err := argsCheck()
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -49,34 +70,11 @@ func main() {
 	}
 }
 
-func init() {
-	ColorMap = map[string]color.Attribute{
-		"white":   color.FgWhite,
-		"black":   color.FgBlack,
-		"red":     color.FgRed,
-		"blue":    color.FgBlue,
-		"magneta": color.FgMagenta,
-		"cyan":    color.FgCyan,
-		"green":   color.FgGreen,
-		"yellow":  color.FgYellow,
-	}
-
-	BgColorMap = map[string]color.Attribute{
-		"white":   color.BgWhite,
-		"black":   color.BgBlack,
-		"red":     color.BgRed,
-		"blue":    color.BgBlue,
-		"magneta": color.BgMagenta,
-		"cyan":    color.BgCyan,
-		"green":   color.BgGreen,
-		"yellow":  color.BgYellow,
-	}
-}
-
 func argsCheck() error {
 	args := os.Args[1:]
 	for i, v := range args {
-		if v == "-r" { //ratio
+		//Ratio
+		if v == "-r" {
 			if len(args)-1 < i+1 {
 				return errors.New("The ratio is missing")
 			}
@@ -85,17 +83,19 @@ func argsCheck() error {
 				return err
 			}
 			if ratio > 100 {
-				return errors.New("The ratio is more than 100")
+				return errors.New("The ratio must be less than 100")
 			}
-			FlakesRatio = ratio
+			flakesRatio = ratio
 		}
-		if v == "-f" { //flake
+		//Flake
+		if v == "-f" {
 			if len(args)-1 < i+1 {
 				return errors.New("The flake character is missing")
 			}
-			SnowChar = strings.TrimSpace(args[i+1])
+			snowChar = strings.TrimSpace(args[i+1])
 		}
-		if v == "-d" { //delay
+		//Delay
+		if v == "-d" {
 			if len(args)-1 < i+1 {
 				return errors.New("The delay is missing")
 			}
@@ -103,28 +103,29 @@ func argsCheck() error {
 			if err != nil {
 				return err
 			}
-			PrintDelayMilliSeconds = time.Duration(delay)
+			printDelayMilliSeconds = time.Duration(delay)
 		}
-		if v == "-c" { //color
+		//Color
+		if v == "-c" {
 			if len(args)-1 < i+1 {
 				return errors.New("The color is missing")
 			}
-			clr, ok := ColorMap[args[i+1]]
+			clr, ok := colorMap[args[i+1]]
 			if !ok {
 				return errors.New("No such color")
 			}
 			color.Set(clr)
 		}
-
-		if v == "-bc" { //background color
+		//Background color
+		if v == "-bc" {
 			if len(args)-1 < i+1 {
 				return errors.New("The background color is missing")
 			}
-			bclr, ok := BgColorMap[args[i+1]]
+			bgClr, ok := bgColorMap[args[i+1]]
 			if !ok {
 				return errors.New("No such color")
 			}
-			color.Set(bclr)
+			color.Set(bgClr)
 		}
 	}
 	return nil
@@ -136,24 +137,23 @@ func snowfall() {
 		panic(err)
 	}
 	for {
-		fmt.Println(getScreen(height, width, FlakesRatio, SnowChar))
-		time.Sleep(time.Millisecond * PrintDelayMilliSeconds)
+		fmt.Println(getScreen(height, width, flakesRatio, snowChar, getStringArray))
+		time.Sleep(time.Millisecond * printDelayMilliSeconds)
 	}
 }
 
 func getTerminalSize() (int, int, error) {
-	switch os := runtime.GOOS; os {
+	switch runtime.GOOS {
 	case "windows":
 		return getTerminalSizeWindows()
-	case "linux":
-		return getTerminalSizeLinux()
+	case "linux", "freebsd":
+		return getTerminalSizeUnix()
 	default:
-		panic("OS don't support")
+		return 0, 0, errors.New("OS don't support")
 	}
-	return 0, 0, nil
 }
 
-func getTerminalSizeLinux() (int, int, error) {
+func getTerminalSizeUnix() (int, int, error) {
 	cmd := exec.Command("stty", "size")
 	cmd.Stdin = os.Stdin
 	out, err := cmd.Output()
@@ -181,15 +181,15 @@ func getTerminalSizeWindows() (int, int, error) {
 	return height, width, nil
 }
 
-func getScreen(height, width, ratio int, snowFlake string) string {
-	snowScreen := ""
-	for i := 0; i < height; i++ {
-		snowScreen += getString(width, snowFlake, ratio) + "\n"
+func getScreen(height, width, ratio int, snowFlake string, fn snowStringGetter) string {
+	screen := make([]string, height)
+	for i := range screen {
+		screen[i] = fn(width, snowFlake, ratio)
 	}
-	return snowScreen
+	return strings.Join(screen, "\n")
 }
 
-func getString(width int, snowflake string, ratio int) string {
+func getStringConcat(width int, snowflake string, ratio int) string {
 	snowString := ""
 	for i := 0; i < width; i++ {
 		r := rand.Intn(100)
@@ -200,6 +200,19 @@ func getString(width int, snowflake string, ratio int) string {
 		}
 	}
 	return snowString
+}
+
+func getStringArray(width int, snowflake string, ratio int) string {
+	slice := make([]string, width)
+	for i := range slice {
+		r := rand.Intn(100)
+		if r < ratio {
+			slice[i] = snowflake
+		} else {
+			slice[i] = " "
+		}
+	}
+	return strings.Join(slice, "")
 }
 
 func getStringAppend(width int, snowflake string, ratio int) string {
@@ -213,12 +226,4 @@ func getStringAppend(width int, snowflake string, ratio int) string {
 		}
 	}
 	return strings.Join(snowSlice, "")
-}
-
-func getScreenAppend(height, width, ratio int, snowFlake string) string {
-	snowScreen := make([]string, 0, height)
-	for i := 0; i < height; i++ {
-		snowScreen = append(snowScreen, getStringAppend(width, snowFlake, ratio))
-	}
-	return strings.Join(snowScreen, "\n")
 }
