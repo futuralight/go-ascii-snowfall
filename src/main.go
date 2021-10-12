@@ -24,7 +24,9 @@ const DefaultFlakesRatio = 3
 //DefaultPrintDelayMilliSeconds - default delay betwen printing
 const DefaultPrintDelayMilliSeconds = 800
 
+//HelpTest text for --help
 const HelpTest = `go-ascii-snowfall 0.389213921011!.3232323242
+
 
 Usage binary [--help] [OPTIONS]
    -r <ratio>			Snowfall power ratio
@@ -33,6 +35,9 @@ Usage binary [--help] [OPTIONS]
    -c <color>			Color of flake (white, black, red, blue, magneta, cyan, green, yellow)
    -bc <background color>	Color of background (white, black, red, blue, magneta, cyan, green, yellow)
 `
+
+//ClearBashScreenCommand - clear bash screen from text!!!
+const ClearBashScreenCommand = "\x1b[H"
 
 //snowStringGetter is func type for getting string of snow
 type snowStringGetter func(int, string, int) string
@@ -78,10 +83,11 @@ func main() {
 		return
 	}
 	if err != nil {
-		fmt.Println("Error: " + err.Error())
-	} else {
-		snowfall()
+		fmt.Println(err)
+		return
+		// panic(err)
 	}
+	snowfall()
 }
 
 func argsCheck() (bool, error) {
@@ -155,8 +161,9 @@ func snowfall() {
 		panic(err)
 	}
 	for {
-		fmt.Println(getScreen(height, width, flakesRatio, snowChar, getStringArray))
+		fmt.Print(getScreen(height, width, flakesRatio, snowChar, getStringArray))
 		time.Sleep(time.Millisecond * printDelayMilliSeconds)
+		fmt.Print(ClearBashScreenCommand)
 	}
 }
 
